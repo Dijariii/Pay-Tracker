@@ -1,10 +1,10 @@
 
+import { format, getMonth } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+
 // Format a date as YYYY-MM-DD
 export const formatDate = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return format(date, 'yyyy-MM-dd');
 };
 
 // Get current month name
@@ -19,28 +19,28 @@ export const getCurrentMonth = (): string => {
 
 // Get Kosovo time (GMT+1)
 export const getKosovoTime = (): Date => {
+  // Use the current date and adjust to Kosovo timezone
+  const kosovoTimeZone = 'Europe/Belgrade'; // Belgrade shares timezone with Kosovo
   const now = new Date();
-  // Kosovo is in GMT+1 (Central European Time)
-  // During standard time; CET is UTC+1
-  const kosovoOffset = 1 * 60; // minutes
-  const localOffset = now.getTimezoneOffset(); // minutes
-  
-  // Calculate the total offset in minutes from local time to Kosovo time
-  const totalOffsetMinutes = localOffset + kosovoOffset;
-  
-  // Apply the offset to the current time
-  return new Date(now.getTime() + totalOffsetMinutes * 60 * 1000);
+  const kosovoTimeStr = formatInTimeZone(now, kosovoTimeZone, "yyyy-MM-dd'T'HH:mm:ss");
+  return new Date(kosovoTimeStr);
 };
 
 // Format a date to a readable string
 export const formatReadableDate = (date: Date): string => {
-  return date.toLocaleDateString('en-GB', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Europe/Belgrade' // Belgrade time is the same as Kosovo time
-  });
+  const kosovoTimeZone = 'Europe/Belgrade'; // Belgrade shares timezone with Kosovo
+  return formatInTimeZone(date, kosovoTimeZone, 'EEEE, d MMMM yyyy, HH:mm');
+};
+
+// Format for spreadsheet display
+export const formatForSpreadsheet = (data: any[]): string => {
+  // Create CSV string
+  const headers = Object.keys(data[0]).join(',');
+  const rows = data.map(item => 
+    Object.values(item).map(value => 
+      typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value
+    ).join(',')
+  ).join('\n');
+  
+  return `${headers}\n${rows}`;
 };

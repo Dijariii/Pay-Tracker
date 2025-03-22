@@ -1,16 +1,24 @@
 
 import React, { useState } from 'react';
-import { Download, Upload, FileDown, FileUp } from 'lucide-react';
+import { FileDown, FileUp, FilePdf, FileSpreadsheet } from 'lucide-react';
 import { exportData, importData } from '@/utils/localStorage';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { usePlayersContext } from '@/contexts/PlayersContext';
+import { formatForSpreadsheet } from '@/utils/dateUtils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const ImportExportData: React.FC = () => {
   const [isImporting, setIsImporting] = useState(false);
-  const { syncData } = usePlayersContext();
+  const { syncData, players } = usePlayersContext();
   
-  const handleExport = () => {
+  // Export data in JSON format
+  const handleExportJSON = () => {
     try {
       const data = exportData();
       const blob = new Blob([data], { type: 'application/json' });
@@ -27,10 +35,119 @@ const ImportExportData: React.FC = () => {
       URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      toast.success('Data exported successfully');
+      toast.success('Data exported as JSON');
     } catch (error) {
       toast.error('Failed to export data');
       console.error('Export error:', error);
+    }
+  };
+
+  // Export data as CSV for spreadsheet
+  const handleExportCSV = () => {
+    try {
+      // Prepare player data for CSV format
+      const playersData = players.map(player => ({
+        ID: player.id,
+        Name: player.name,
+        Category: player.category,
+        Position: player.position,
+        JerseyNumber: player.jerseyNumber,
+        DateOfBirth: player.dateOfBirth || '',
+        PaymentStatus: player.payments[player.payments.length - 1]?.paid ? 'Paid' : 'Unpaid'
+      }));
+      
+      const csvData = formatForSpreadsheet(playersData);
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gjakova-fc-players-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('Data exported as CSV');
+    } catch (error) {
+      toast.error('Failed to export CSV');
+      console.error('CSV export error:', error);
+    }
+  };
+
+  // Export data as PDF
+  const handleExportPDF = () => {
+    try {
+      // Create a printable version of the data
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast.error('Pop-up blocked. Please allow pop-ups to export PDF.');
+        return;
+      }
+      
+      // HTML content for the print window
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Gjakova FC - Players Data</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f2f2f2; }
+              h1 { color: #e11d48; }
+              .header { display: flex; justify-content: space-between; align-items: center; }
+              .date { font-size: 14px; color: #666; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>Gjakova FC - Players Data</h1>
+              <p class="date">Generated on ${new Date().toLocaleDateString()}</p>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Position</th>
+                  <th>Jersey</th>
+                  <th>DOB</th>
+                  <th>Payment</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${players.map(player => `
+                  <tr>
+                    <td>${player.id}</td>
+                    <td>${player.name}</td>
+                    <td>${player.category}</td>
+                    <td>${player.position}</td>
+                    <td>${player.jerseyNumber}</td>
+                    <td>${player.dateOfBirth || '-'}</td>
+                    <td>${player.payments[player.payments.length - 1]?.paid ? 'Paid' : 'Unpaid'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      
+      // Add slight delay to ensure content is loaded
+      setTimeout(() => {
+        printWindow.print();
+        // printWindow will be automatically closed after printing or if user cancels
+      }, 500);
+      
+      toast.success('PDF export ready');
+    } catch (error) {
+      toast.error('Failed to export PDF');
+      console.error('PDF export error:', error);
     }
   };
   
@@ -79,16 +196,30 @@ const ImportExportData: React.FC = () => {
       
       <div className="flex flex-col space-y-4">
         <div>
-          <Button
-            variant="outline"
-            onClick={handleExport}
-            className="w-full justify-start border-gjakova-gray/30 hover:bg-gjakova-gray/20"
-          >
-            <FileDown className="mr-2 h-4 w-4" />
-            Export Data
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start border-gjakova-gray/30 hover:bg-gjakova-gray/20"
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Export Data
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48 bg-gjakova-gray/95 border-gjakova-gray/30">
+              <DropdownMenuItem onClick={handleExportJSON} className="cursor-pointer hover:bg-gjakova-gray/50">
+                <FileDown className="mr-2 h-4 w-4" /> JSON Format
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportCSV} className="cursor-pointer hover:bg-gjakova-gray/50">
+                <FileSpreadsheet className="mr-2 h-4 w-4" /> Spreadsheet (CSV)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer hover:bg-gjakova-gray/50">
+                <FilePdf className="mr-2 h-4 w-4" /> PDF Document
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <p className="text-xs text-white/60 mt-1">
-            Download all player data and attendance records as a JSON file.
+            Export player data and attendance records in different formats.
           </p>
         </div>
         

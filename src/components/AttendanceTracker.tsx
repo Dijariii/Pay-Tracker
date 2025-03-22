@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Calendar, UserCheck, Search } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Calendar, UserCheck, Search, Filter } from 'lucide-react';
 import { usePlayersContext } from '@/contexts/PlayersContext';
 import { AttendanceRecord, getAttendanceRecords, saveAttendanceRecord } from '@/utils/localStorage';
 import { formatDate } from '@/utils/dateUtils';
@@ -14,24 +14,65 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from "@/components/ui/dropdown-menu";
 
 const AttendanceTracker: React.FC = () => {
   const { players } = usePlayersContext();
   const [date, setDate] = useState<string>(formatDate(new Date()));
   const [searchQuery, setSearchQuery] = useState('');
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [filteredPlayers, setFilteredPlayers] = useState(players);
+  
+  // Calculate total attendance stats
+  const attendanceStats = useMemo(() => {
+    const todaysRecords = attendanceRecords.filter(r => r.date === date);
+    const presentCount = todaysRecords.filter(r => r.present).length;
+    const totalCount = players.length;
+    const percentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
+    
+    return {
+      present: presentCount,
+      total: totalCount,
+      percentage
+    };
+  }, [attendanceRecords, date, players]);
   
   useEffect(() => {
     // Load existing attendance records
     const records = getAttendanceRecords() || [];
     setAttendanceRecords(records);
     
-    // Filter players based on search
-    setFilteredPlayers(players.filter(player => 
-      player.name.toLowerCase().includes(searchQuery.toLowerCase())
-    ));
-  }, [players, searchQuery]);
+    // Apply filters
+    applyFilters();
+  }, [players, searchQuery, categoryFilter]);
+  
+  const applyFilters = () => {
+    let filtered = [...players];
+    
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(player => 
+        player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        player.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(player.jerseyNumber).includes(searchQuery)
+      );
+    }
+    
+    // Apply category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(player => player.category === categoryFilter);
+    }
+    
+    setFilteredPlayers(filtered);
+  };
   
   const getPlayerAttendance = (playerId: number): boolean => {
     const record = attendanceRecords.find(
@@ -71,6 +112,12 @@ const AttendanceTracker: React.FC = () => {
     setDate(e.target.value);
   };
   
+  // Get unique categories from players
+  const categories = useMemo(() => {
+    const uniqueCategories = [...new Set(players.map(player => player.category))];
+    return ['all', ...uniqueCategories];
+  }, [players]);
+  
   return (
     <div className="glass-card rounded-xl p-6">
       <div className="flex items-center justify-between mb-6">
@@ -86,8 +133,24 @@ const AttendanceTracker: React.FC = () => {
         </div>
       </div>
       
-      <div className="mb-6">
-        <div className="relative">
+      <div className="mb-4 bg-gjakova-gray/10 p-3 rounded-lg flex items-center justify-between">
+        <div>
+          <span className="text-sm text-white/60">Attendance:</span>
+          <span className="ml-2 font-medium">{attendanceStats.present}/{attendanceStats.total} players</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-full h-2 bg-gjakova-gray/30 rounded-full overflow-hidden w-24">
+            <div 
+              className="h-full bg-green-500" 
+              style={{ width: `${attendanceStats.percentage}%` }}
+            ></div>
+          </div>
+          <span className="text-xs">{attendanceStats.percentage}%</span>
+        </div>
+      </div>
+      
+      <div className="mb-6 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" size={18} />
           <Input
             placeholder="Search players..."
@@ -96,6 +159,28 @@ const AttendanceTracker: React.FC = () => {
             className="pl-10 bg-gjakova-gray/20 border-gjakova-gray/30"
           />
         </div>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="flex-shrink-0 border-gjakova-gray/30 focus:ring-0">
+              <Filter size={16} className="mr-2" />
+              Filter
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-gjakova-gray/95 border-gjakova-gray/30">
+            <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-gjakova-gray/30" />
+            {categories.map(category => (
+              <DropdownMenuItem 
+                key={category}
+                onClick={() => setCategoryFilter(category)}
+                className={`cursor-pointer ${categoryFilter === category ? 'bg-gjakova-red/20 text-gjakova-red' : ''}`}
+              >
+                {category === 'all' ? 'All Categories' : category}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       
       <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
