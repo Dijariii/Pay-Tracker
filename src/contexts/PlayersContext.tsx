@@ -4,7 +4,10 @@ import { Player, players as initialPlayers } from '@/utils/playerData';
 import { toast } from 'sonner';
 import { 
   savePlayersToLocalStorage, 
-  getPlayersFromLocalStorage 
+  getPlayersFromLocalStorage,
+  AttendanceRecord,
+  getAttendanceRecords,
+  saveAttendanceRecord
 } from '@/utils/localStorage';
 
 interface PlayersContextType {
@@ -16,6 +19,9 @@ interface PlayersContextType {
   deletePlayer: (id: number) => void;
   recordPayment: (playerId: number, paymentIndex: number) => void;
   syncData: () => void;
+  attendanceRecords: AttendanceRecord[];
+  recordAttendance: (playerId: number, date: string, present: boolean) => void;
+  searchPlayers: (query: string, filters?: { category?: string; paymentStatus?: string }) => Player[];
 }
 
 const PlayersContext = createContext<PlayersContextType | undefined>(undefined);
@@ -30,6 +36,7 @@ export const usePlayersContext = () => {
 
 export const PlayersProvider = ({ children }: { children: React.ReactNode }) => {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
@@ -58,6 +65,7 @@ export const PlayersProvider = ({ children }: { children: React.ReactNode }) => 
   useEffect(() => {
     const loadData = async () => {
       const storedPlayers = getPlayersFromLocalStorage();
+      const storedAttendance = getAttendanceRecords() || [];
       
       if (storedPlayers) {
         setPlayers(storedPlayers);
@@ -66,6 +74,7 @@ export const PlayersProvider = ({ children }: { children: React.ReactNode }) => 
         setPlayers(initialPlayers);
       }
       
+      setAttendanceRecords(storedAttendance);
       setIsLoading(false);
     };
 
@@ -151,8 +160,71 @@ export const PlayersProvider = ({ children }: { children: React.ReactNode }) => 
       return;
     }
     
+    // Reload data from localStorage
+    const storedPlayers = getPlayersFromLocalStorage();
+    const storedAttendance = getAttendanceRecords() || [];
+    
+    if (storedPlayers) {
+      setPlayers(storedPlayers);
+    }
+    
+    setAttendanceRecords(storedAttendance);
     toast.success("Data synced successfully");
-    // In a real app, this would sync with a backend
+  };
+
+  // Record attendance
+  const recordAttendance = (playerId: number, date: string, present: boolean) => {
+    const newRecord: AttendanceRecord = { playerId, date, present };
+    
+    // Save to localStorage
+    saveAttendanceRecord(newRecord);
+    
+    // Update state
+    setAttendanceRecords(prev => {
+      const existingIndex = prev.findIndex(
+        r => r.playerId === playerId && r.date === date
+      );
+      
+      if (existingIndex !== -1) {
+        const updated = [...prev];
+        updated[existingIndex] = newRecord;
+        return updated;
+      }
+      
+      return [...prev, newRecord];
+    });
+    
+    toast.success(`Attendance ${present ? 'marked' : 'unmarked'} for player`);
+  };
+
+  // Enhanced search function with filtering
+  const searchPlayers = (
+    query: string, 
+    filters?: { category?: string; paymentStatus?: string }
+  ): Player[] => {
+    return players.filter(player => {
+      // Search by name
+      const matchesSearch = player.name.toLowerCase().includes(query.toLowerCase()) ||
+                           player.position.toLowerCase().includes(query.toLowerCase()) ||
+                           player.jerseyNumber.toString().includes(query);
+      
+      // Filter by category
+      const matchesCategory = !filters?.category || 
+                             filters.category === 'all' || 
+                             player.category === filters.category;
+      
+      // Filter by payment status
+      if (!filters?.paymentStatus || filters.paymentStatus === 'all') {
+        return matchesSearch && matchesCategory;
+      }
+      
+      // Get latest payment
+      const latestPayment = player.payments[player.payments.length - 1];
+      const isPaid = latestPayment.paid;
+      
+      return matchesSearch && matchesCategory && 
+            (filters.paymentStatus === 'paid' ? isPaid : !isPaid);
+    });
   };
 
   return (
@@ -164,7 +236,10 @@ export const PlayersProvider = ({ children }: { children: React.ReactNode }) => 
       updatePlayer, 
       deletePlayer, 
       recordPayment,
-      syncData
+      syncData,
+      attendanceRecords,
+      recordAttendance,
+      searchPlayers
     }}>
       {children}
     </PlayersContext.Provider>

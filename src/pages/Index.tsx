@@ -2,16 +2,30 @@
 import React, { useState, useEffect } from 'react';
 import { getPaymentStats, getMonthlyPaymentStatus } from '@/utils/playerData';
 import StatsCard from '@/components/StatsCard';
-import { Users, PiggyBank, AlertCircle, Calendar, ChevronRight } from 'lucide-react';
+import { Users, PiggyBank, AlertCircle, Calendar, ChevronRight, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PaymentStatus from '@/components/PaymentStatus';
 import { usePlayersContext } from '@/contexts/PlayersContext';
 import OfflineIndicator from '@/components/OfflineIndicator';
+import { getKosovoTime, formatReadableDate, getCurrentMonth } from '@/utils/dateUtils';
 
 const Index = () => {
   const { players, isLoading } = usePlayersContext();
   const [stats, setStats] = useState(getPaymentStats());
   const [monthlyStats, setMonthlyStats] = useState(getMonthlyPaymentStatus());
+  const [currentTime, setCurrentTime] = useState(formatReadableDate(getKosovoTime()));
+  const [currentTimeObj, setCurrentTimeObj] = useState(getKosovoTime());
+  
+  // Update Kosovo time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const kosovoTime = getKosovoTime();
+      setCurrentTime(formatReadableDate(kosovoTime));
+      setCurrentTimeObj(kosovoTime);
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!isLoading) {
@@ -48,7 +62,17 @@ const Index = () => {
       };
 
       const calculateMonthlyStats = () => {
-        const months = ["January", "February", "March", "April", "May"];
+        // Use actual months rather than hardcoded ones
+        const currentMonth = getCurrentMonth();
+        const currentMonthIndex = new Date().getMonth();
+        
+        // Get previous 4 months and current month
+        const months = [];
+        for (let i = 4; i >= 0; i--) {
+          const monthIndex = (currentMonthIndex - i + 12) % 12; // Handle wrap around to previous year
+          const monthName = new Date(0, monthIndex).toLocaleString('default', { month: 'long' });
+          months.push(monthName);
+        }
         
         return months.map(month => {
           let totalPaid = 0;
@@ -73,7 +97,7 @@ const Index = () => {
       setStats(calculateStats());
       setMonthlyStats(calculateMonthlyStats());
     }
-  }, [players, isLoading]);
+  }, [players, isLoading, currentTimeObj]);
 
   // Animation delay utilities
   const getDelayClass = (index: number) => {
@@ -101,14 +125,21 @@ const Index = () => {
       <div className="md:pl-72 pt-20 md:pt-8 px-4 md:px-10">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <div className="inline-block px-3 py-1 bg-gjakova-red/10 text-gjakova-red text-xs font-medium rounded-full mb-2">
-              Dashboard
+          <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between">
+            <div>
+              <div className="inline-block px-3 py-1 bg-gjakova-red/10 text-gjakova-red text-xs font-medium rounded-full mb-2">
+                Dashboard
+              </div>
+              <h1 className="text-3xl font-bold">Gjakova FC Payment Tracker</h1>
+              <p className="text-white/60 mt-2">
+                Track and manage player payment status.
+              </p>
             </div>
-            <h1 className="text-3xl font-bold">Gjakova FC Payment Tracker</h1>
-            <p className="text-white/60 mt-2">
-              Track and manage player payment status.
-            </p>
+            
+            <div className="mt-4 md:mt-0 flex items-center bg-gjakova-gray/20 px-4 py-2 rounded-lg text-sm text-white/80">
+              <Clock size={16} className="mr-2 text-gjakova-red" />
+              <span>{currentTime} (Kosovo Time)</span>
+            </div>
           </div>
 
           {/* Stats Cards */}
@@ -154,7 +185,7 @@ const Index = () => {
               <div className="glass-card rounded-xl p-6 animate-slide-up delay-[200ms]">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-bold">Monthly Payment Status</h2>
-                  <span className="text-xs text-white/60">2023</span>
+                  <span className="text-xs text-white/60">{currentTimeObj.getFullYear()}</span>
                 </div>
                 
                 <div className="space-y-6">
