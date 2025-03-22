@@ -31,7 +31,7 @@ A modern web application for tracking and managing payments in Gjakova, built wi
 
 1. Clone the repository:
 ```sh
-git clone https://github.com/yourusername/gjakova-paytracker.git
+git clone https://github.com/yourusername/Pay-Tracker.git
 ```
 
 2. Navigate to the project directory:
