@@ -1,25 +1,36 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { players } from '@/utils/playerData';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import PaymentStatus from '@/components/PaymentStatus';
-import { ArrowLeft, User, Edit, MessageSquare, CheckCircle2, Circle } from 'lucide-react';
+import { ArrowLeft, User, Edit, MessageSquare, CheckCircle2, Circle, Trash2 } from 'lucide-react';
+import { usePlayersContext } from '@/contexts/PlayersContext';
+import EditPlayerDialog from '@/components/EditPlayerDialog';
+import PaymentDialog from '@/components/PaymentDialog';
+import DeletePlayerDialog from '@/components/DeletePlayerDialog';
 
 const PlayerDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { players, isLoading } = usePlayersContext();
   const [player, setPlayer] = useState(players.find(p => p.id === Number(id)));
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'payments' | 'details'>('payments');
+  
+  // Dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedPaymentIndex, setSelectedPaymentIndex] = useState<number>(-1);
 
   useEffect(() => {
-    // Simulate loading player data
-    const timer = setTimeout(() => {
-      setPlayer(players.find(p => p.id === Number(id)));
-      setIsLoading(false);
-    }, 800);
+    // Update player when players change or id changes
+    const currentPlayer = players.find(p => p.id === Number(id));
+    setPlayer(currentPlayer);
     
-    return () => clearTimeout(timer);
-  }, [id]);
+    // If player doesn't exist and we're not loading, navigate back to players
+    if (!currentPlayer && !isLoading) {
+      navigate('/players');
+    }
+  }, [id, players, isLoading, navigate]);
 
   if (isLoading) {
     return (
@@ -55,6 +66,12 @@ const PlayerDetail = () => {
   const paidPayments = player.payments.filter(payment => payment.paid).length;
   const paymentPercentage = Math.round((paidPayments / totalPayments) * 100);
 
+  // Handle opening the payment dialog
+  const handleOpenPaymentDialog = (index: number) => {
+    setSelectedPaymentIndex(index);
+    setPaymentDialogOpen(true);
+  };
+
   return (
     <div className="page-transition min-h-screen">
       {/* Page Content */}
@@ -86,9 +103,20 @@ const PlayerDetail = () => {
                 )}
               </div>
               
-              <button className="absolute top-4 right-4 p-2 bg-gjakova-black/40 rounded-full hover:bg-gjakova-black/60 transition-colors">
-                <Edit size={18} className="text-white/80" />
-              </button>
+              <div className="absolute top-4 right-4 flex gap-2">
+                <button 
+                  onClick={() => setEditDialogOpen(true)}
+                  className="p-2 bg-gjakova-black/40 rounded-full hover:bg-gjakova-black/60 transition-colors"
+                >
+                  <Edit size={18} className="text-white/80" />
+                </button>
+                <button 
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="p-2 bg-gjakova-black/40 rounded-full hover:bg-red-500/40 transition-colors"
+                >
+                  <Trash2 size={18} className="text-white/80" />
+                </button>
+              </div>
             </div>
             
             <div className="p-8 pt-14">
@@ -99,6 +127,8 @@ const PlayerDetail = () => {
                     <span>{player.position}</span>
                     <span className="mx-2">•</span>
                     <span>#{player.jerseyNumber}</span>
+                    <span className="mx-2">•</span>
+                    <span className="text-gjakova-red">{player.category}</span>
                   </div>
                 </div>
                 
@@ -176,7 +206,16 @@ const PlayerDetail = () => {
                 <div className="glass-card rounded-xl p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-lg font-medium">Payment History</h2>
-                    <button className="px-4 py-2 bg-gjakova-red text-white rounded-lg text-sm hover:bg-gjakova-dark-red transition-colors">
+                    <button 
+                      className="px-4 py-2 bg-gjakova-red text-white rounded-lg text-sm hover:bg-gjakova-dark-red transition-colors"
+                      onClick={() => {
+                        // Find the latest unpaid payment
+                        const unpaidIndex = player.payments.findIndex(p => !p.paid);
+                        if (unpaidIndex !== -1) {
+                          handleOpenPaymentDialog(unpaidIndex);
+                        }
+                      }}
+                    >
                       Record Payment
                     </button>
                   </div>
@@ -204,7 +243,10 @@ const PlayerDetail = () => {
                           {payment.paid ? (
                             <div className="text-green-500 text-sm">Paid on {payment.date}</div>
                           ) : (
-                            <button className="px-3 py-1 bg-gjakova-red/10 text-gjakova-red text-sm rounded hover:bg-gjakova-red/20 transition-colors">
+                            <button 
+                              className="px-3 py-1 bg-gjakova-red/10 text-gjakova-red text-sm rounded hover:bg-gjakova-red/20 transition-colors"
+                              onClick={() => handleOpenPaymentDialog(index)}
+                            >
                               Mark as Paid
                             </button>
                           )}
@@ -238,6 +280,11 @@ const PlayerDetail = () => {
                     </div>
                     
                     <div>
+                      <div className="text-sm text-white/60 mb-1">Age Category</div>
+                      <div className="font-medium text-gjakova-red">{player.category}</div>
+                    </div>
+                    
+                    <div>
                       <div className="text-sm text-white/60 mb-1">Payment Status</div>
                       <div className={`font-medium ${paymentPercentage >= 70 ? 'text-green-500' : paymentPercentage >= 40 ? 'text-yellow-500' : 'text-red-500'}`}>
                         {paymentPercentage >= 70 ? 'Good Standing' : paymentPercentage >= 40 ? 'Partial' : 'Behind'}
@@ -264,7 +311,10 @@ const PlayerDetail = () => {
                   <div className="pt-6 border-t border-gjakova-gray/20">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-md font-medium">Additional Details</h3>
-                      <button className="text-gjakova-red text-sm hover:text-gjakova-light-red">
+                      <button 
+                        className="text-gjakova-red text-sm hover:text-gjakova-light-red"
+                        onClick={() => setEditDialogOpen(true)}
+                      >
                         Edit
                       </button>
                     </div>
@@ -292,6 +342,37 @@ const PlayerDetail = () => {
           </div>
         </div>
       </div>
+      
+      {/* Dialogs */}
+      {player && (
+        <>
+          <EditPlayerDialog 
+            open={editDialogOpen} 
+            onOpenChange={setEditDialogOpen} 
+            player={player}
+          />
+          
+          <DeletePlayerDialog 
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            playerId={player.id}
+            playerName={player.name}
+          />
+          
+          {selectedPaymentIndex !== -1 && (
+            <PaymentDialog 
+              open={paymentDialogOpen}
+              onOpenChange={setPaymentDialogOpen}
+              playerId={player.id}
+              paymentIndex={selectedPaymentIndex}
+              playerName={player.name}
+              month={player.payments[selectedPaymentIndex]?.month || ''}
+              year={player.payments[selectedPaymentIndex]?.year || 2023}
+              amount={player.payments[selectedPaymentIndex]?.amount || 25}
+            />
+          )}
+        </>
+      )}
     </div>
   );
 };

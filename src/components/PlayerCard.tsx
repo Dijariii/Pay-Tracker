@@ -41,7 +41,12 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
           </div>
           
           <div className="flex-1">
-            <h3 className="font-bold text-lg text-white">{player.name}</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-lg text-white">{player.name}</h3>
+              <span className="text-xs font-medium px-2 py-1 bg-gjakova-red/10 text-gjakova-red rounded-full">
+                {player.category}
+              </span>
+            </div>
             <div className="flex items-center text-white/60 text-sm mt-1">
               <span className="mr-2">{player.position}</span>
               <span className="w-1 h-1 rounded-full bg-white/40"></span>

@@ -5,6 +5,7 @@ export interface Player {
   position: string;
   jerseyNumber: number;
   imageUrl?: string;
+  category: 'U7' | 'U9' | 'U11' | 'U13' | 'U15';
   payments: {
     month: string;
     year: number;
@@ -21,6 +22,7 @@ export const players: Player[] = [
     name: "Armend Krasniqi",
     position: "Goalkeeper",
     jerseyNumber: 1,
+    category: 'U15',
     imageUrl: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjB8fHNvY2NlciUyMHBsYXllcnxlbnwwfHwwfHx8MA%3D%3D",
     payments: [
       { month: "January", year: 2023, paid: true, amount: 25, date: "2023-01-05" },
@@ -35,6 +37,7 @@ export const players: Player[] = [
     name: "Drilon Berisha",
     position: "Defender",
     jerseyNumber: 4,
+    category: 'U15',
     imageUrl: "https://images.unsplash.com/photo-1508341591423-4347099e1f19?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Zm9vdGJhbGwlMjBwbGF5ZXJ8ZW58MHx8MHx8fDA%3D",
     payments: [
       { month: "January", year: 2023, paid: true, amount: 25, date: "2023-01-10" },
@@ -49,6 +52,7 @@ export const players: Player[] = [
     name: "Burim Hoxha",
     position: "Midfielder",
     jerseyNumber: 8,
+    category: 'U13',
     imageUrl: "https://images.unsplash.com/photo-1539701938214-0d9736e1c16b?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8Zm9vdGJhbGwlMjBwbGF5ZXJ8ZW58MHx8MHx8fDA%3D",
     payments: [
       { month: "January", year: 2023, paid: true, amount: 25, date: "2023-01-03" },
@@ -63,6 +67,7 @@ export const players: Player[] = [
     name: "Valon Gashi",
     position: "Forward",
     jerseyNumber: 10,
+    category: 'U13',
     imageUrl: "https://images.unsplash.com/photo-1580698543091-f2ee757a7e62?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8Zm9vdGJhbGwlMjBwbGF5ZXJ8ZW58MHx8MHx8fDA%3D",
     payments: [
       { month: "January", year: 2023, paid: true, amount: 25, date: "2023-01-07" },
@@ -77,6 +82,7 @@ export const players: Player[] = [
     name: "Besart Morina",
     position: "Defender",
     jerseyNumber: 3,
+    category: 'U11',
     imageUrl: "https://images.unsplash.com/photo-1507249098506-78d442e2fd8e?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fGZvb3RiYWxsJTIwcGxheWVyfGVufDB8fDB8fHww",
     payments: [
       { month: "January", year: 2023, paid: true, amount: 25, date: "2023-01-12" },
@@ -91,6 +97,7 @@ export const players: Player[] = [
     name: "Faton Kryeziu",
     position: "Midfielder",
     jerseyNumber: 6,
+    category: 'U11',
     imageUrl: "https://images.unsplash.com/photo-1604935189570-46c92a9f2ef8?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTN8fGZvb3RiYWxsJTIwcGxheWVyfGVufDB8fDB8fHww",
     payments: [
       { month: "January", year: 2023, paid: true, amount: 25, date: "2023-01-02" },
@@ -105,6 +112,7 @@ export const players: Player[] = [
     name: "Liridon Rexhepi",
     position: "Forward",
     jerseyNumber: 11,
+    category: 'U9',
     imageUrl: "https://images.unsplash.com/photo-1580698544585-56c7ed64d4d9?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGZvb3RiYWxsJTIwcGxheWVyfGVufDB8fDB8fHww",
     payments: [
       { month: "January", year: 2023, paid: true, amount: 25, date: "2023-01-15" },
@@ -119,6 +127,7 @@ export const players: Player[] = [
     name: "Adnan Haliti",
     position: "Goalkeeper",
     jerseyNumber: 12,
+    category: 'U7',
     imageUrl: "https://images.unsplash.com/photo-1618667622988-33499ab97a2e?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzB8fGZvb3RiYWxsJTIwcGxheWVyfGVufDB8fDB8fHww",
     payments: [
       { month: "January", year: 2023, paid: true, amount: 25, date: "2023-01-08" },

@@ -1,39 +1,32 @@
 
-import React, { useState, useEffect } from 'react';
-import { players, Player } from '@/utils/playerData';
+import React, { useState } from 'react';
 import PlayerCard from '@/components/PlayerCard';
-import { Search, Filter, Plus } from 'lucide-react';
+import { Search, Filter, Plus, Tag } from 'lucide-react';
+import { usePlayersContext } from '@/contexts/PlayersContext';
+import AddPlayerDialog from '@/components/AddPlayerDialog';
 
 const Players = () => {
-  const [playersList, setPlayersList] = useState<Player[]>([]);
+  const { players, isLoading } = usePlayersContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'paid' | 'unpaid'>('all');
-  const [isLoading, setIsLoading] = useState(true);
+  const [filterCategory, setFilterCategory] = useState<'all' | 'U7' | 'U9' | 'U11' | 'U13' | 'U15'>('all');
+  const [addPlayerDialogOpen, setAddPlayerDialogOpen] = useState(false);
 
-  useEffect(() => {
-    // Simulate loading data
-    const timer = setTimeout(() => {
-      setPlayersList(players);
-      setIsLoading(false);
-    }, 800);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Filter players based on search and payment status
-  const filteredPlayers = playersList.filter(player => {
+  // Filter players based on search, payment status, and category
+  const filteredPlayers = players.filter(player => {
     const matchesSearch = player.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = filterCategory === 'all' || player.category === filterCategory;
     
-    if (filterStatus === 'all') return matchesSearch;
+    if (filterStatus === 'all') return matchesSearch && matchesCategory;
     
     // Get latest payment
     const latestPayment = player.payments[player.payments.length - 1];
     
     if (filterStatus === 'paid') {
-      return matchesSearch && latestPayment.paid;
+      return matchesSearch && matchesCategory && latestPayment.paid;
     }
     
-    return matchesSearch && !latestPayment.paid;
+    return matchesSearch && matchesCategory && !latestPayment.paid;
   });
 
   return (
@@ -67,7 +60,7 @@ const Players = () => {
               />
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <div className="relative">
                 <select
                   value={filterStatus}
@@ -83,7 +76,28 @@ const Players = () => {
                 </div>
               </div>
               
-              <button className="py-3 px-4 bg-gjakova-red text-white rounded-lg hover:bg-gjakova-dark-red transition-colors duration-300 flex items-center gap-2">
+              <div className="relative">
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value as 'all' | 'U7' | 'U9' | 'U11' | 'U13' | 'U15')}
+                  className="appearance-none pl-10 pr-8 py-3 bg-gjakova-gray/20 border border-gjakova-gray/20 rounded-lg focus:outline-none focus:border-gjakova-red/40 focus:ring-1 focus:ring-gjakova-red/20 text-white cursor-pointer"
+                >
+                  <option value="all">All Categories</option>
+                  <option value="U7">Under 7</option>
+                  <option value="U9">Under 9</option>
+                  <option value="U11">Under 11</option>
+                  <option value="U13">Under 13</option>
+                  <option value="U15">Under 15</option>
+                </select>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Tag size={18} className="text-white/40" />
+                </div>
+              </div>
+              
+              <button 
+                className="py-3 px-4 bg-gjakova-red text-white rounded-lg hover:bg-gjakova-dark-red transition-colors duration-300 flex items-center gap-2"
+                onClick={() => setAddPlayerDialogOpen(true)}
+              >
                 <Plus size={18} />
                 <span>Add</span>
               </button>
@@ -130,6 +144,12 @@ const Players = () => {
           )}
         </div>
       </div>
+      
+      {/* Add Player Dialog */}
+      <AddPlayerDialog 
+        open={addPlayerDialogOpen} 
+        onOpenChange={setAddPlayerDialogOpen} 
+      />
     </div>
   );
 };
