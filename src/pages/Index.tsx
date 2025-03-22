@@ -5,22 +5,75 @@ import StatsCard from '@/components/StatsCard';
 import { Users, PiggyBank, AlertCircle, Calendar, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PaymentStatus from '@/components/PaymentStatus';
+import { usePlayersContext } from '@/contexts/PlayersContext';
+import OfflineIndicator from '@/components/OfflineIndicator';
 
 const Index = () => {
+  const { players, isLoading } = usePlayersContext();
   const [stats, setStats] = useState(getPaymentStats());
   const [monthlyStats, setMonthlyStats] = useState(getMonthlyPaymentStatus());
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate data loading
-    const timer = setTimeout(() => {
-      setStats(getPaymentStats());
-      setMonthlyStats(getMonthlyPaymentStatus());
-      setIsLoading(false);
-    }, 800);
+    if (!isLoading) {
+      // Recalculate stats when players data changes
+      const calculateStats = () => {
+        let totalPlayers = players.length;
+        let totalCollected = 0;
+        let totalDue = 0;
+        let paidCount = 0;
+        let overdueCount = 0;
+        
+        players.forEach(player => {
+          player.payments.forEach(payment => {
+            if (payment.paid) {
+              totalCollected += payment.amount;
+              paidCount++;
+            } else {
+              totalDue += payment.amount;
+              overdueCount++;
+            }
+          });
+        });
+        
+        return {
+          totalPlayers,
+          totalCollected,
+          totalDue,
+          paidCount,
+          overdueCount,
+          paidPercentage: paidCount + overdueCount > 0 
+            ? Math.round((paidCount / (paidCount + overdueCount)) * 100)
+            : 0
+        };
+      };
 
-    return () => clearTimeout(timer);
-  }, []);
+      const calculateMonthlyStats = () => {
+        const months = ["January", "February", "March", "April", "May"];
+        
+        return months.map(month => {
+          let totalPaid = 0;
+          let totalPlayers = players.length;
+          
+          players.forEach(player => {
+            const payment = player.payments.find(p => p.month === month);
+            if (payment && payment.paid) {
+              totalPaid++;
+            }
+          });
+          
+          return {
+            month,
+            paidCount: totalPaid,
+            unpaidCount: totalPlayers - totalPaid,
+            percentage: totalPlayers > 0 ? Math.round((totalPaid / totalPlayers) * 100) : 0
+          };
+        });
+      };
+
+      setStats(calculateStats());
+      setMonthlyStats(calculateMonthlyStats());
+    }
+  }, [players, isLoading]);
 
   // Animation delay utilities
   const getDelayClass = (index: number) => {
@@ -41,6 +94,9 @@ const Index = () => {
 
   return (
     <div className="page-transition min-h-screen">
+      {/* Offline Indicator */}
+      <OfflineIndicator />
+      
       {/* Page Content */}
       <div className="md:pl-72 pt-20 md:pt-8 px-4 md:px-10">
         <div className="max-w-7xl mx-auto">

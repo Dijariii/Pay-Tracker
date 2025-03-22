@@ -2,14 +2,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Player, players as initialPlayers } from '@/utils/playerData';
 import { toast } from 'sonner';
+import { 
+  savePlayersToLocalStorage, 
+  getPlayersFromLocalStorage 
+} from '@/utils/localStorage';
 
 interface PlayersContextType {
   players: Player[];
   isLoading: boolean;
+  isOnline: boolean;
   addPlayer: (player: Omit<Player, 'id'>) => void;
   updatePlayer: (id: number, updates: Partial<Omit<Player, 'id'>>) => void;
   deletePlayer: (id: number) => void;
   recordPayment: (playerId: number, paymentIndex: number) => void;
+  syncData: () => void;
 }
 
 const PlayersContext = createContext<PlayersContextType | undefined>(undefined);
@@ -25,16 +31,58 @@ export const usePlayersContext = () => {
 export const PlayersProvider = ({ children }: { children: React.ReactNode }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
+  // Online/offline status listener
   useEffect(() => {
-    // Simulate loading data from API
-    const timer = setTimeout(() => {
-      setPlayers(initialPlayers);
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success('You are back online');
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.warning('You are offline. Changes will be saved locally.');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Load data from localStorage or use initial data
+  useEffect(() => {
+    const loadData = async () => {
+      const storedPlayers = getPlayersFromLocalStorage();
+      
+      if (storedPlayers) {
+        setPlayers(storedPlayers);
+      } else {
+        // Use initial data if nothing in localStorage
+        setPlayers(initialPlayers);
+      }
+      
       setIsLoading(false);
+    };
+
+    // Simulate loading data with a slight delay for UX
+    const timer = setTimeout(() => {
+      loadData();
     }, 800);
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Save to localStorage whenever players change
+  useEffect(() => {
+    if (!isLoading && players.length > 0) {
+      savePlayersToLocalStorage(players);
+    }
+  }, [players, isLoading]);
 
   const addPlayer = (playerData: Omit<Player, 'id'>) => {
     const currentDate = new Date();
@@ -96,14 +144,27 @@ export const PlayersProvider = ({ children }: { children: React.ReactNode }) => 
     toast.success("Payment recorded successfully");
   };
 
+  // Function to sync data with server (mock)
+  const syncData = () => {
+    if (!isOnline) {
+      toast.error("Cannot sync while offline");
+      return;
+    }
+    
+    toast.success("Data synced successfully");
+    // In a real app, this would sync with a backend
+  };
+
   return (
     <PlayersContext.Provider value={{ 
       players, 
-      isLoading, 
+      isLoading,
+      isOnline,
       addPlayer, 
       updatePlayer, 
       deletePlayer, 
-      recordPayment 
+      recordPayment,
+      syncData
     }}>
       {children}
     </PlayersContext.Provider>
