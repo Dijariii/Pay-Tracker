@@ -1,10 +1,9 @@
-
-import React, { memo } from 'react';
+import React from 'react';
 import { usePlayersContext } from '@/contexts/PlayersContext';
 import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { getLastSyncTime } from '@/utils/localStorage';
 
-const OfflineIndicator: React.FC = memo(() => {
+const OfflineIndicator: React.FC = () => {
   const { isOnline, syncData } = usePlayersContext();
   const lastSync = getLastSyncTime();
   
@@ -58,8 +57,6 @@ const OfflineIndicator: React.FC = memo(() => {
       )}
     </div>
   );
-});
-
-OfflineIndicator.displayName = 'OfflineIndicator';
+};
 
 export default OfflineIndicator;

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getPaymentStats, getMonthlyPaymentStatus } from '@/utils/playerData';
 import StatsCard from '@/components/StatsCard';
 import { Users, PiggyBank, AlertCircle, Calendar, ChevronRight, Clock } from 'lucide-react';
@@ -18,23 +18,14 @@ const Index = () => {
   
   // Update Kosovo time every minute
   useEffect(() => {
-    // Set initial values
-    const kosovoTime = getKosovoTime();
-    setCurrentTime(formatReadableDate(kosovoTime));
-    setCurrentTimeObj(kosovoTime);
-    
-    // Update every minute
     const timer = setInterval(() => {
       const kosovoTime = getKosovoTime();
       setCurrentTime(formatReadableDate(kosovoTime));
       setCurrentTimeObj(kosovoTime);
-    }, 60000);
+    }, 60000); // Update every minute
     
     return () => clearInterval(timer);
   }, []);
-
-  // Memoize current month
-  const currentMonth = useMemo(() => getCurrentMonth(), []);
 
   useEffect(() => {
     if (!isLoading) {
@@ -72,6 +63,7 @@ const Index = () => {
 
       const calculateMonthlyStats = () => {
         // Use actual months rather than hardcoded ones
+        const currentMonth = getCurrentMonth();
         const currentMonthIndex = new Date().getMonth();
         
         // Get previous 4 months and current month
@@ -146,7 +138,7 @@ const Index = () => {
             
             <div className="mt-4 md:mt-0 flex items-center bg-gjakova-gray/20 px-4 py-2 rounded-lg text-sm text-white/80">
               <Clock size={16} className="mr-2 text-gjakova-red" />
-              <span>{currentTime}</span>
+              <span>{currentTime} (Kosovo Time)</span>
             </div>
           </div>
 
@@ -240,7 +232,7 @@ const Index = () => {
                   >
                     <div className="flex items-center">
                       <Calendar size={18} className="mr-3" />
-                      <span>Mark {currentMonth} Payment</span>
+                      <span>Mark Payment</span>
                     </div>
                     <ChevronRight size={18} />
                   </button>
